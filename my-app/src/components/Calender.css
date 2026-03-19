@@ -1,0 +1,153 @@
+.calpage__grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.calpage__cal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+.calpage__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.calpage__nav-label {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1d2e;
+}
+.calpage__nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #f0f2f8;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1d2e;
+  transition: all 0.15s ease;
+}
+.calpage__nav-btn:hover { background: #1a1d2e; color: #fff; }
+
+.calpage__daynames {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+.calpage__daynames span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #b2b7ce;
+  font-family: 'Nunito', sans-serif;
+  padding: 4px 0;
+}
+
+.calpage__cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.calpage__cell {
+  aspect-ratio: 1;
+  border-radius: 9px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d2e;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.13s ease;
+  position: relative;
+}
+.calpage__cell:hover:not(:disabled) { background: #f0f2f8; }
+.calpage__cell--empty    { visibility: hidden; }
+.calpage__cell--today    { background: #1a1d2e !important; color: #fff !important; font-weight: 800; }
+.calpage__cell--selected { background: #e9f1fe; color: #4a8af4; font-weight: 800; }
+.calpage__cell--has-event { font-weight: 800; }
+.calpage__cell-dot {
+  width: 4px;
+  height: 4px;
+  background: #4a8af4;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 3px;
+}
+.calpage__cell--today .calpage__cell-dot { background: #fff; }
+
+.calpage__detail {
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+.calpage__detail-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1a1d2e;
+  margin-bottom: 14px;
+}
+
+.calpage__no-events {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 30px 0;
+  color: #b2b7ce;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.calpage__events { display: flex; flex-direction: column; gap: 10px; }
+
+.calpage__event {
+  background: #f8f9fc;
+  border-radius: 12px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.calpage__event-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.calpage__event-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: #1a1d2e; }
+.calpage__event-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px; font-family: 'Sora', sans-serif; white-space: nowrap; }
+.calpage__event-sub { font-size: 12px; color: #7c82a0; font-weight: 500; font-family: 'Nunito', sans-serif; }
+.calpage__event-progress { display: flex; align-items: center; gap: 8px; }
+.calpage__event-track { flex: 1; height: 5px; background: #e4e7f0; border-radius: 3px; overflow: hidden; }
+.calpage__event-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.calpage__event-progress span { font-size: 11px; font-weight: 700; color: #7c82a0; font-family: 'Sora', sans-serif; }
+
+.calpage__upcoming { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+.calpage__upcoming-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f8f9fc; border-radius: 10px; }
+.calpage__upcoming-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.calpage__upcoming-info { flex: 1; min-width: 0; }
+.calpage__upcoming-name { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; color: #1a1d2e; display: block; }
+.calpage__upcoming-dead { font-size: 10px; color: #b2b7ce; font-weight: 600; font-family: 'Nunito', sans-serif; }
+.calpage__upcoming-prog { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.calpage__upcoming-track { width: 60px; height: 4px; background: #e4e7f0; border-radius: 3px; overflow: hidden; }
+.calpage__upcoming-prog span { font-size: 11px; font-weight: 700; color: #7c82a0; font-family: 'Sora', sans-serif; }
+
+@media (max-width: 900px) {
+  .calpage__grid { grid-template-columns: 1fr; }
+}

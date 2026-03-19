@@ -1,0 +1,119 @@
+.histpage__summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.histpage__summary-card {
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.histpage__summary-num {
+  font-family: 'Sora', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.histpage__summary-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c82a0;
+  font-family: 'Nunito', sans-serif;
+}
+
+.histpage__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  color: #b2b7ce;
+}
+.histpage__search input {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1a1d2e;
+  flex: 1;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+}
+.histpage__search input::placeholder { color: #b2b7ce; }
+
+.histpage__timeline { display: flex; flex-direction: column; gap: 0; }
+
+.histpage__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  position: relative;
+  animation: slideUp 0.3s ease both;
+}
+
+.histpage__item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  z-index: 1;
+  margin-top: 2px;
+}
+
+.histpage__item-line {
+  position: absolute;
+  left: 18px;
+  top: 38px;
+  bottom: -10px;
+  width: 2px;
+  background: #f0f2f8;
+}
+.histpage__item:last-child .histpage__item-line { display: none; }
+
+.histpage__item-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 13px 15px;
+  margin-left: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.15s ease;
+}
+.histpage__item-card:hover { transform: translateX(3px); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
+
+.histpage__item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.histpage__item-project { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: #1a1d2e; }
+.histpage__item-time { font-size: 11px; color: #b2b7ce; font-weight: 600; font-family: 'Nunito', sans-serif; white-space: nowrap; }
+.histpage__item-detail { font-size: 12px; color: #7c82a0; font-weight: 500; font-family: 'Nunito', sans-serif; line-height: 1.4; }
+
+.histpage__item-prog { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.histpage__item-track { flex: 1; height: 4px; background: #f0f2f8; border-radius: 3px; overflow: hidden; }
+.histpage__item-prog span { font-size: 11px; font-weight: 700; color: #7c82a0; font-family: 'Sora', sans-serif; }
+
+.histpage__empty {
+  text-align: center;
+  padding: 40px;
+  color: #b2b7ce;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  background: #fff;
+  border-radius: 16px;
+}
+
+@media (max-width: 700px) {
+  .histpage__summary { grid-template-columns: repeat(2, 1fr); }
+}

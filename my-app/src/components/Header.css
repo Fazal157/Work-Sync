@@ -1,0 +1,339 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 0 20px 0;
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header__hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+  border-radius: 10px;
+  transition: all 0.22s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.header__hamburger:hover { background: #ffffff; }
+.header__hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #1a1d2e;
+  border-radius: 2px;
+}
+
+.header__logo {
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1d2e;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+/* ── Search ── */
+.header__search {
+  flex: 1;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 2px solid transparent;
+  border-radius: 50px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: all 0.22s ease;
+}
+.header__search--focused {
+  border-color: #4a8af4;
+  box-shadow: 0 0 0 4px rgba(74,138,244,0.1);
+}
+.header__search > svg   { color: #b2b7ce; flex-shrink: 0; }
+.header__search input   {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1d2e;
+  width: 100%;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+}
+.header__search input::placeholder { color: #b2b7ce; }
+.header__search button  {
+  color: #b2b7ce;
+  display: flex;
+  align-items: center;
+  transition: all 0.22s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.header__search button:hover { color: #1a1d2e; }
+
+/* ── Right side ── */
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Add button */
+.header__add-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  color: #7c82a0;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26,29,46,0.25);
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+.header__add-btn:hover {
+  transform: scale(1.08) rotate(90deg);
+  box-shadow: 0 6px 18px rgba(26,29,46,0.35);
+}
+
+/* ── Notification ── */
+.header__notif {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.header__notif-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #7c82a0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+.header__notif-btn:hover,
+.header__notif-btn--open {
+  background: #eef0f8;
+}
+
+/* ── Dropdown ── */
+.header__notif-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.16);
+  z-index: 9999;
+  overflow: hidden;
+  animation: notifSlide 0.2s ease;
+  /* Ensure solid white — no transparency bleed */
+  isolation: isolate;
+}
+
+@keyframes notifSlide {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+.header__notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #eef0f8;
+  background: #ffffff;
+}
+.header__notif-head span {
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1a1d2e;
+}
+.header__notif-head button {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a8af4;
+  font-family: 'Nunito', sans-serif;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+.header__notif-head button:hover { color: #1a1d2e; }
+
+.header__notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #eef0f8;
+  background: #ffffff;
+  transition: background 0.18s ease;
+  cursor: pointer;
+}
+.header__notif-item:last-child  { border-bottom: none; }
+.header__notif-item:hover       { background: #f5f7ff; }
+
+.header__notif-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.header__notif-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d2e;
+  line-height: 1.5;
+  font-family: 'Nunito', sans-serif;
+}
+
+.header__notif-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b2b7ce;
+  white-space: nowrap;
+  font-family: 'Nunito', sans-serif;
+  flex-shrink: 0;
+}
+
+/* ── Divider ── */
+.header__divider {
+  width: 1px;
+  height: 34px;
+  background: #eef0f8;
+  flex-shrink: 0;
+}
+
+/* ── User ── */
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 8px 4px 4px;
+  border-radius: 50px;
+  transition: all 0.22s ease;
+}
+.header__user:hover { background: rgba(0,0,0,0.04); }
+
+.header__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header__user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.header__user-name {
+  font-weight: 800;
+  font-size: 14px;
+  color: #1a1d2e;
+  font-family: 'Sora', sans-serif;
+  white-space: nowrap;
+}
+.header__user-role {
+  font-size: 11px;
+  color: #b2b7ce;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header__hamburger  { display: flex; }
+  .header__user-info  { display: none; }
+  .header__divider    { display: none; }
+
+  /* On mobile shift dropdown to not go off screen */
+  .header__notif-dropdown {
+    right: -10px;
+    width: 280px;
+  }
+}
+
+@media (max-width: 560px) {
+  .header__search { max-width: 180px; }
+}
+
+@media (max-width: 420px) {
+  .header__search { display: none; }
+
+  .header__notif-dropdown {
+    right: -60px;
+    width: 260px;
+  }
+}
+
+
+
+
+
+/* When button is in normal state */
+.header__notif-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #7c82a0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.header__notif-btn:hover,
+.header__notif-btn--open {
+  background: #eef0f8;
+  color: #1a1d2e;
+}

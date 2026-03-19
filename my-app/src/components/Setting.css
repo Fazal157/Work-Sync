@@ -1,0 +1,340 @@
+.settpage__layout {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.settpage__tabs {
+  background: #fff;
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: sticky;
+  top: 0;
+}
+
+.settpage__tab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c82a0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.15s ease;
+  text-align: left;
+  white-space: nowrap;
+}
+.settpage__tab:hover  { background: #f0f2f8; color: #1a1d2e; }
+.settpage__tab--on    { background: #1a1d2e; color: #fff; }
+.settpage__tab-icon   { font-size: 14px; flex-shrink: 0; }
+
+.settpage__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sett-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sett-card-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1d2e;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f2f8;
+}
+
+.sett-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.sett-row .sett-field { flex: 1; min-width: 120px; }
+
+.sett-field { display: flex; flex-direction: column; gap: 7px; }
+.sett-field label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #7c82a0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Nunito', sans-serif;
+}
+.sett-field input,
+.sett-field select {
+  border: 2px solid #f0f2f8;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1d2e;
+  background: #f8f9fc;
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+.sett-field input:focus,
+.sett-field select:focus { border-color: #4a8af4; background: #fff; }
+
+/* Toggle */
+.sett-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f8f9fc;
+}
+.sett-toggle-row:last-of-type { border-bottom: none; }
+.sett-toggle-label { font-size: 13px; font-weight: 700; color: #1a1d2e; font-family: 'Nunito', sans-serif; }
+.sett-toggle-desc  { font-size: 11px; color: #b2b7ce; font-weight: 500; font-family: 'Nunito', sans-serif; margin-top: 2px; }
+
+.sett-toggle {
+  width: 42px;
+  height: 23px;
+  border-radius: 12px;
+  background: #e4e7f0;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+.sett-toggle--on { background: #4a8af4; }
+
+.sett-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 17px;
+  height: 17px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  display: block;
+}
+.sett-toggle--on .sett-toggle-thumb { transform: translateX(19px); }
+
+/* Theme buttons */
+.sett-theme-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.sett-theme-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: #f0f2f8;
+  border: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c82a0;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.sett-theme-btn:hover  { border-color: #b2b7ce; color: #1a1d2e; }
+.sett-theme-btn--on    { border-color: #4a8af4; background: #e9f1fe; color: #4a8af4; }
+
+/* Colors */
+.sett-colors { display: flex; gap: 10px; flex-wrap: wrap; }
+.sett-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sett-color-btn:hover   { transform: scale(1.15); }
+.sett-color-btn--on     { border-color: #1a1d2e; transform: scale(1.15); box-shadow: 0 3px 8px rgba(0,0,0,0.2); }
+
+/* Profile tab */
+.sett-no-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #b2b7ce;
+  font-family: 'Nunito', sans-serif;
+}
+.sett-no-profile p    { font-size: 15px; font-weight: 700; color: #7c82a0; }
+.sett-no-profile span { font-size: 13px; font-weight: 500; line-height: 1.6; }
+.sett-no-profile strong { color: #4a8af4; }
+
+.sett-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f2f8;
+  flex-wrap: wrap;
+}
+
+.sett-profile-avatar {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sett-profile-avatar span {
+  font-family: 'Sora', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+.sett-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.sett-profile-name    { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: #1a1d2e; }
+.sett-profile-role    { font-size: 12px; font-weight: 600; color: #4a8af4; margin-top: 2px; }
+.sett-profile-company { font-size: 12px; color: #7c82a0; font-weight: 500; margin-top: 2px; }
+
+.sett-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f8ee;
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-top: 5px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.sett-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.sett-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8f9fc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.sett-profile-lbl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b2b7ce;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.sett-profile-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d2e;
+  font-family: 'Nunito', sans-serif;
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sett-profile-val a       { color: #4a8af4; text-decoration: none; }
+.sett-profile-val a:hover { text-decoration: underline; }
+
+.sett-profile-bio {
+  background: #f8f9fc;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sett-profile-bio p {
+  font-size: 13px;
+  color: #7c82a0;
+  font-weight: 500;
+  line-height: 1.6;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Danger zone */
+.sett-danger-zone {
+  background: #fff5f5;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #fee2e2;
+}
+.sett-danger-zone h4 {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ef4444;
+  margin-bottom: 12px;
+}
+.sett-danger-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sett-danger-btn:hover { background: #dc2626; transform: translateY(-1px); }
+
+.sett-saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8f8ee;
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  animation: slideUp 0.2s ease;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .settpage__layout        { grid-template-columns: 1fr; }
+  .settpage__tabs          { flex-direction: row; flex-wrap: wrap; position: static; }
+  .settpage__tab           { flex: 1; justify-content: center; min-width: 80px; }
+}
+@media (max-width: 600px) {
+  .sett-profile-grid       { grid-template-columns: 1fr; }
+  .sett-profile-header     { flex-direction: column; align-items: flex-start; }
+  .sett-row                { flex-direction: column; }
+  .sett-theme-btns         { flex-direction: column; }
+}
