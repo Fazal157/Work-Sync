@@ -53,7 +53,7 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
         <button className="header__hamburger" onClick={onMenuClick} aria-label="Open sidebar">
           <span /><span /><span />
         </button>
-        <h1 className="header__logo">Portfolio</h1>
+        <h1 className="header__logo">TrackForge</h1>
       </div>
 
       {/* Center — search */}

@@ -38,9 +38,9 @@
 
 .header__logo {
   font-family: 'Sora', sans-serif;
-  font-size: 22px;
+  font-size:28px;
   font-weight: 800;
-  color: #1a1d2e;
+  color: #2b1115;
   letter-spacing: -0.5px;
   white-space: nowrap;
 }
@@ -48,7 +48,7 @@
 /* ── Search ── */
 .header__search {
   flex: 1;
-  max-width: 380px;
+  max-width: 300px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -272,7 +272,7 @@
 }
 .header__user-name {
   font-weight: 800;
-  font-size: 14px;
+  font-size: 18px;
   color: #1a1d2e;
   font-family: 'Sora', sans-serif;
   white-space: nowrap;
