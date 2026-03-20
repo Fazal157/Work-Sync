@@ -12,8 +12,8 @@ export default function AuthPage({ onLoginSuccess }) {
       {/* Left — branding panel */}
       <div className="auth-panel auth-panel--left">
         <div className="auth-brand">
-          <div className="auth-brand-logo">P</div>
-          <h1 className="auth-brand-name">Portfolio</h1>
+          <div className="auth-brand-logo">TrackForge</div>
+          <h1 className="auth-brand-name">Build.Track.Deliver</h1>
           <p className="auth-brand-tagline">Manage your projects & clients in one place</p>
         </div>
         <div className="auth-features">
