@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Header.css';
 
-export default function Header({ onMenuClick, onAddProject, userProfile }) {
+export default function Header({ onMenuClick, onAddProject, userProfile, onLogout }) {
   const [searchVal,   setSearchVal]   = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
   const [notifOpen,   setNotifOpen]   = useState(false);
@@ -18,12 +18,12 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
   const getTimeAgo = (date) => {
     const now  = new Date();
     const diff = Math.floor((now - date) / 1000);
-    if (diff < 60)      return 'Just now';
-    if (diff < 3600)    return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400)   return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 604800)  return `${Math.floor(diff / 86400)}d ago`;
-    if (diff < 2592000) return `${Math.floor(diff / 604800)}w ago`;
-    if (diff < 31536000)return `${Math.floor(diff / 2592000)}mo ago`;
+    if (diff < 60)       return 'Just now';
+    if (diff < 3600)     return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400)    return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800)   return `${Math.floor(diff / 86400)}d ago`;
+    if (diff < 2592000)  return `${Math.floor(diff / 604800)}w ago`;
+    if (diff < 31536000) return `${Math.floor(diff / 2592000)}mo ago`;
     return `${Math.floor(diff / 31536000)}y ago`;
   };
 
@@ -34,13 +34,12 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
     { id: 4, text: 'New project assigned to you',  date: new Date(Date.now() - 1  * 24 * 60 * 60 * 1000), dot: '#a855f7' },
   ];
 
-  // ── Derive display values from saved profile or fallback to defaults ──
-  const displayName    = userProfile
+  // ── Display values from profile or fallback ──
+  const displayName     = userProfile
     ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim()
     : 'Fazal R';
-
-  const displayRole    = userProfile?.role      || 'Full Stack Developer';
-  const displayAvatar  = userProfile?.avatarPreview || null;
+  const displayRole     = userProfile?.role         || 'Full Stack Developer';
+  const displayAvatar   = userProfile?.avatarPreview || null;
   const displayInitials = userProfile
     ? `${userProfile.firstName?.[0] || ''}${userProfile.lastName?.[0] || ''}`.toUpperCase() || 'FR'
     : 'FR';
@@ -75,8 +74,8 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
           <button onClick={() => setSearchVal('')} aria-label="Clear">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6"  y1="6" x2="18" y2="18"/>
+              <line x1="18" y1="6"  x2="6"  y2="18"/>
+              <line x1="6"  y1="6"  x2="18" y2="18"/>
             </svg>
           </button>
         )}
@@ -89,7 +88,7 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
         <button className="header__add-btn" onClick={onAddProject} title="Add new project">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="12" y1="5"  x2="12" y2="19"/>
             <line x1="5"  y1="12" x2="19" y2="12"/>
           </svg>
         </button>
@@ -155,6 +154,23 @@ export default function Header({ onMenuClick, onAddProject, userProfile }) {
             <span className="header__user-role">{displayRole}</span>
           </div>
         </div>
+
+        {/* Logout button */}
+        {onLogout && (
+          <button
+            className="header__logout-btn"
+            onClick={onLogout}
+            title="Logout"
+            aria-label="Logout"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16,17 21,12 16,7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        )}
 
       </div>
     </header>

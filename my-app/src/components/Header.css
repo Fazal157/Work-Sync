@@ -337,3 +337,25 @@
   background: #eef0f8;
   color: #1a1d2e;
 }
+
+
+/* Logout button */
+.header__logout-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.header__logout-btn:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: translateX(2px);
+}

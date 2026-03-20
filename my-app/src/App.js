@@ -1,14 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import AuthPage      from './components/AuthPage';
+import Header        from './components/Header';
+import Sidebar       from './components/Sidebar';
 import ProjectsPanel from './components/ProjectsPanel';
 import MessagesPanel from './components/MessagesPanel';
 import AddProjectModal from './components/AddProjectModal';
-import Profile from './components/Profile';
-import Message from './components/Message';
-import Calendar from './components/Calender';
-import History from './components/History';
-import Setting from './components/Setting';
+import Profile       from './components/Profile';
+import Message       from './components/Message';
+import Calendar      from './components/Calender';
+import History       from './components/History';
+import Setting       from './components/Setting';
 import { projectsData, messagesData } from './data/mockData';
 import './App.css';
 
@@ -19,39 +20,50 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen,   setModalOpen]   = useState(false);
 
-  // ── Profile state — loads from localStorage on startup ──
+  // ── Auth state ──
+  const [loggedIn, setLoggedIn] = useState(() => {
+    try {
+      return !!localStorage.getItem('loggedInUser');
+    } catch { return false; }
+  });
+
   const [userProfile, setUserProfile] = useState(() => {
     try {
       const saved = localStorage.getItem('userProfile');
       return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   });
+
+  const handleLoginSuccess = (user) => {
+    setLoggedIn(true);
+    setUserProfile(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('loggedInUser');
+    setLoggedIn(false);
+    setActivePage('home');
+  };
 
   const handleAddProject       = useCallback((p)  => setProjects(prev => [p, ...prev]), []);
   const handleDeleteProject    = useCallback((id) => setProjects(prev => prev.filter(p => p.id !== id)), []);
   const handleEditProject      = useCallback((id, updates) => setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p)), []);
   const handleDuplicateProject = useCallback((project) => setProjects(prev => [{ ...project, id: Date.now(), title: `${project.title} (Copy)` }, ...prev]), []);
   const handleStarMessage      = useCallback((id) => setMessages(prev => prev.map(m => m.id === id ? { ...m, starred: !m.starred } : m)), []);
+  const handleProfileSave      = useCallback((data) => setUserProfile(data), []);
 
-  // ── Save profile data and update header ──
-  const handleProfileSave = useCallback((data) => {
-    setUserProfile(data);
-  }, []);
+  // ── Show auth page if not logged in ──
+  if (!loggedIn) {
+    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const renderPage = () => {
     switch (activePage) {
-      case 'profile':
-        return <Profile onProfileSave={handleProfileSave} />;
-      case 'messages':
-        return <Message messages={messages} onStar={handleStarMessage} />;
-      case 'calendar':
-        return <Calendar projects={projects} />;
-      case 'history':
-        return <History  projects={projects} />;
-      case 'settings':
-        return <Setting userProfile={userProfile} />;
+      case 'profile':  return <Profile onProfileSave={handleProfileSave} />;
+      case 'messages': return <Message messages={messages} onStar={handleStarMessage} />;
+      case 'calendar': return <Calendar projects={projects} />;
+      case 'history':  return <History  projects={projects} />;
+      case 'settings': return <Setting  userProfile={userProfile} />;
       default:
         return (
           <>
@@ -75,6 +87,7 @@ export default function App() {
         onAddProject={() => setModalOpen(true)}
         activePage={activePage}
         userProfile={userProfile}
+        onLogout={handleLogout}
       />
       <div className="app__body">
         <Sidebar
