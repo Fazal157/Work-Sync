@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { db }                                  from '../firebase';
 import {
   collection, addDoc, onSnapshot,
@@ -6,6 +6,8 @@ import {
   doc, setDoc, where, getDocs,
 }                                              from 'firebase/firestore';
 import './Message.css';
+
+const ACTIVE_CHAT_KEY = 'activeChatOtherId';
 
 export default function Message({ onStar, userProfile }) {
   const [activeClient,  setActiveClient]  = useState(null);
@@ -22,6 +24,7 @@ export default function Message({ onStar, userProfile }) {
   const [unreadCounts,  setUnreadCounts]  = useState({});
   const bottomRef                         = useRef(null);
   const inputRef                          = useRef(null);
+  const shouldAutoScrollRef              = useRef(false);
 
   // ── Get current logged in user ──
   const currentUser = (() => {
@@ -51,7 +54,7 @@ export default function Message({ onStar, userProfile }) {
     return Number.isFinite(d.getTime()) ? d.getTime() : 0;
   };
 
-  const formatChatListItem = (chatDoc) => {
+  const formatChatListItem = useCallback((chatDoc) => {
     const data = chatDoc?.data?.() || {};
     const participants = Array.isArray(data.participants) ? data.participants : [];
 
@@ -75,11 +78,11 @@ export default function Message({ onStar, userProfile }) {
       color: data.color || '#4a8af4',
       starred: false,
     };
-  };
+  }, [myIdStr]);
 
   // ── Load my chat threads from Firebase ──
   useEffect(() => {
-    if (!myId) return;
+    if (!myIdStr) return;
 
     const q = query(
       collection(db, 'chats'),
@@ -94,24 +97,34 @@ export default function Message({ onStar, userProfile }) {
       setClientList(next);
 
       // Keep active selection in sync after refresh
+      const storedOtherId = localStorage.getItem(ACTIVE_CHAT_KEY);
       setActiveClient(prev => {
-        if (!prev?.id) return prev;
-        const match = next.find(c => String(c.id) === String(prev.id));
-        return match || null;
+        const prevId = prev?.id ? String(prev.id) : '';
+        if (prevId) {
+          const match = next.find(c => String(c.id) === prevId);
+          return match || null;
+        }
+
+        if (storedOtherId) {
+          const match = next.find(c => String(c.id) === String(storedOtherId));
+          return match || null;
+        }
+
+        return null;
       });
     });
 
     return () => unsub();
-  }, [myIdStr]);
+  }, [myIdStr, formatChatListItem]);
 
   // ── Load real-time messages when client selected ──
   useEffect(() => {
-    if (!activeClient) {
+    const otherId = activeClient?.id;
+    if (!otherId) {
       setChatMessages([]);
       return;
     }
-
-    const chatId = getChatId(myId, activeClient.id);
+    const chatId = getChatId(myIdStr, otherId);
     const q      = query(
       collection(db, 'chats', chatId, 'messages'),
       orderBy('createdAt', 'asc')
@@ -121,12 +134,17 @@ export default function Message({ onStar, userProfile }) {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setChatMessages(msgs);
       // Clear unread for this client
-      setUnreadCounts(prev => ({ ...prev, [activeClient.id]: 0 }));
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+      setUnreadCounts(prev => ({ ...prev, [otherId]: 0 }));
+
+      // Only auto-scroll when *this client* initiated sending.
+      if (shouldAutoScrollRef.current) {
+        shouldAutoScrollRef.current = false;
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+      }
     });
 
     return () => unsub();
-  }, [activeClient?.id]);
+  }, [activeClient?.id, myIdStr]);
 
   // ── Track unread messages per client ──
   useEffect(() => {
@@ -135,7 +153,7 @@ export default function Message({ onStar, userProfile }) {
 
     clientList.forEach(client => {
       if (!client?.id) return;
-      const chatId = getChatId(myId, client.id);
+      const chatId = getChatId(myIdStr, client.id);
       const q      = query(
         collection(db, 'chats', chatId, 'messages'),
         orderBy('createdAt', 'asc')
@@ -164,7 +182,7 @@ export default function Message({ onStar, userProfile }) {
     });
 
     return () => unsubs.forEach(u => u());
-  }, [clientList.map(c => String(c.id)).join('|'), activeClient?.id, myIdStr]);
+  }, [clientList, activeClient?.id, myIdStr]);
 
   const findUserByEmail = async (emailRaw) => {
     const email = (emailRaw || '').trim();
@@ -198,7 +216,8 @@ export default function Message({ onStar, userProfile }) {
     setReplyText('');
 
     try {
-      const chatId = getChatId(myId, activeClient.id);
+      shouldAutoScrollRef.current = true;
+      const chatId = getChatId(myIdStr, activeClient.id);
 
       await addDoc(collection(db, 'chats', chatId, 'messages'), {
         text,
@@ -237,6 +256,7 @@ export default function Message({ onStar, userProfile }) {
     setComposeError('');
 
     try {
+      shouldAutoScrollRef.current = true;
       let receiver = null;
 
       // Requirement: send to the email address the user registered with.
@@ -343,7 +363,11 @@ export default function Message({ onStar, userProfile }) {
         </div>
         <button
           className="page-save-btn"
-          onClick={() => { setComposing(true); setActiveClient(null); }}
+          onClick={() => {
+            setComposing(true);
+            setActiveClient(null);
+            localStorage.removeItem(ACTIVE_CHAT_KEY);
+          }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -417,7 +441,11 @@ export default function Message({ onStar, userProfile }) {
                   <div
                     key={c.id}
                     className={`msgpage__item${isActive ? ' msgpage__item--on' : ''}`}
-                    onClick={() => { setActiveClient(c); setComposing(false); }}
+                    onClick={() => {
+                      setActiveClient(c);
+                      setComposing(false);
+                      localStorage.setItem(ACTIVE_CHAT_KEY, String(c.id));
+                    }}
                   >
                     <div className="msgpage__item-av" style={{ background: c.color || '#4a8af4' }}>
                       {getInitials(c.sender)}
@@ -523,19 +551,6 @@ export default function Message({ onStar, userProfile }) {
               {/* Messages area */}
               <div className="msgpage__thread-body">
 
-                {/* Original message from mockData */}
-                {activeClient.preview && (
-                  <div className="msgpage__day-divider">
-                    <span>Original Message</span>
-                  </div>
-                )}
-                {activeClient.preview && (
-                  <div className="msgpage__bubble msgpage__bubble--in">
-                    <p>{activeClient.preview}</p>
-                    <span>{formatTime(activeClient.date)}</span>
-                  </div>
-                )}
-
                 {/* Firebase real-time messages */}
                 {chatMessages.length > 0 && (
                   <div className="msgpage__day-divider">
@@ -544,7 +559,7 @@ export default function Message({ onStar, userProfile }) {
                 )}
 
                 {chatMessages.map((msg, i) => {
-                  const isMe = String(msg.senderId) === String(myId);
+                  const isMe = String(msg.senderId) === myIdStr;
                   return (
                     <div
                       key={msg.id}
