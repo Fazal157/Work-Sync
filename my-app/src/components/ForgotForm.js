@@ -1,134 +1,101 @@
-import React, { useState } from 'react';
-import emailjs from '@emailjs/browser';
+import React, { useState }              from 'react';
+import { auth, sendPasswordResetEmail } from '../firebase';
 
 export default function ForgotForm({ onSwitch }) {
-  const [step,        setStep]        = useState('email'); // email | code | newpwd | done
-  const [email,       setEmail]       = useState('');
-  const [code,        setCode]        = useState('');
-  const [sentCode,    setSentCode]    = useState('');
-  const [newPwd,      setNewPwd]      = useState('');
-  const [confirmPwd,  setConfirmPwd]  = useState('');
-  const [showPwd,     setShowPwd]     = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [errors,      setErrors]      = useState({});
-  const [alert,       setAlert]       = useState(null);
+  const [step,    setStep]    = useState('email'); // email | done
+  const [email,   setEmail]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errors,  setErrors]  = useState({});
+  const [alert,   setAlert]   = useState(null);
 
-  /* ── Step 1: Send reset code ── */
+  /* ── Send reset link via Firebase ── */
   const handleSendCode = async () => {
     if (!/\S+@\S+\.\S+/.test(email)) {
       setErrors({ email: 'Enter a valid email address' });
       return;
     }
-
-    // Check if user exists
-    const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const user  = users.find(u => u.email === email);
-
-    if (!user) {
-      setErrors({ email: 'No account found with this email address.' });
-      return;
-    }
-
     setLoading(true);
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentCode(resetCode);
+    setErrors({});
 
     try {
-      await emailjs.send(
-        process.env.REACT_APP_EMAILJS_SERVICE_ID,
-        process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-        {
-          to_email: email,
-          to_name:  user.firstName || 'User',
-          code:     resetCode,
-        },
-        process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-      );
+      // Firebase sends real password reset link to Gmail
+      await sendPasswordResetEmail(auth, email.trim());
 
-      setStep('code');
-      setAlert({ type: 'info', msg: `Reset code sent to ${email}` });
+      setStep('done');
+      setAlert({
+        type: 'success',
+        msg:  `Password reset link sent to ${email}. Check your inbox and click the link to set a new password.`,
+      });
 
-    } catch {
-      setErrors({ email: 'Failed to send reset code. Please try again.' });
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        setErrors({ email: 'No account found with this email address.' });
+      } else if (err.code === 'auth/invalid-email') {
+        setErrors({ email: 'Invalid email address.' });
+      } else if (err.code === 'auth/too-many-requests') {
+        setErrors({ email: 'Too many requests. Please wait a few minutes and try again.' });
+      } else {
+        setErrors({ email: `Failed to send reset email: ${err.message}` });
+      }
     }
     setLoading(false);
   };
 
-  /* ── Step 2: Verify code ── */
-  const handleVerifyCode = () => {
-    if (!code.trim()) { setErrors({ code: 'Enter the verification code' }); return; }
-    if (code !== sentCode) { setErrors({ code: 'Incorrect code. Please try again.' }); return; }
-    setErrors({});
-    setAlert(null);
-    setStep('newpwd');
-  };
-
-  /* ── Step 3: Set new password ── */
-  const handleResetPassword = () => {
-    const e = {};
-    if (!newPwd)             e.newPwd     = 'Enter a new password';
-    else if (newPwd.length < 8) e.newPwd  = 'Minimum 8 characters';
-    if (newPwd !== confirmPwd)  e.confirmPwd = 'Passwords do not match';
-    if (Object.keys(e).length) { setErrors(e); return; }
-
-    // Update password in localStorage
-    const users   = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const updated = users.map(u => u.email === email ? { ...u, password: newPwd } : u);
-    localStorage.setItem('registeredUsers', JSON.stringify(updated));
-
-    setStep('done');
-    setAlert({ type: 'success', msg: 'Password reset successful! You can now log in.' });
-  };
-
   return (
     <div className="aform">
+
+      {/* Header */}
       <div className="aform__head">
-        <div style={{ fontSize: 36, marginBottom: 4 }}>
+        <div style={{ fontSize: 40, marginBottom: 4 }}>
           {step === 'done' ? '✅' : '🔐'}
         </div>
         <h1 className="aform__title">
-          {step === 'email'  && 'Forgot password?'}
-          {step === 'code'   && 'Check your email'}
-          {step === 'newpwd' && 'Create new password'}
-          {step === 'done'   && 'Password reset!'}
+          {step === 'email' ? 'Forgot password?' : 'Check your email!'}
         </h1>
         <p className="aform__sub">
-          {step === 'email'  && 'Enter your email and we\'ll send a reset code.'}
-          {step === 'code'   && <>Enter the 6-digit code sent to <strong>{email}</strong></>}
-          {step === 'newpwd' && 'Choose a strong new password for your account.'}
-          {step === 'done'   && 'Your password has been reset successfully.'}
+          {step === 'email'
+            ? "Enter your registered email and we'll send a reset link."
+            : <>We sent a password reset link to <strong>{email}</strong></>
+          }
         </p>
       </div>
 
+      {/* Alert */}
       {alert && (
         <div className={`aform__alert aform__alert--${alert.type}`}>
-          {alert.type === 'success' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>}
-          {alert.type === 'info'    && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+          {alert.type === 'success' && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+          )}
           {alert.msg}
         </div>
       )}
 
-      {/* Step indicator */}
-      {step !== 'done' && (
+      {/* Step progress bar */}
+      {step === 'email' && (
         <div style={{ display: 'flex', gap: 6 }}>
-          {['email', 'code', 'newpwd'].map((s, i) => (
-            <div key={s} style={{
-              flex: 1, height: 3, borderRadius: 2,
-              background: ['email','code','newpwd'].indexOf(step) >= i ? '#4a8af4' : '#f0f2f8',
-              transition: 'background 0.3s ease',
-            }} />
-          ))}
+          <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#4a8af4', transition: 'background 0.3s ease' }} />
+          <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#f0f2f8', transition: 'background 0.3s ease' }} />
         </div>
       )}
 
-      <div className="aform__fields">
+      {step === 'done' && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#22c55e' }} />
+          <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#22c55e' }} />
+        </div>
+      )}
 
-        {/* ── Step 1: Email ── */}
-        {step === 'email' && (
+      {/* ── Step 1: Email input ── */}
+      {step === 'email' && (
+        <div className="aform__fields">
           <div className="aform__field">
             <label className="aform__label">Email Address</label>
             <div className={`aform__input-wrap${errors.email ? ' aform__input-wrap--err' : ''}`}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                 <polyline points="22,6 12,13 2,6"/>
               </svg>
@@ -136,115 +103,110 @@ export default function ForgotForm({ onSwitch }) {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={e => { setEmail(e.target.value); setErrors({}); }}
+                onChange={e => { setEmail(e.target.value); setErrors({}); setAlert(null); }}
                 onKeyDown={e => e.key === 'Enter' && handleSendCode()}
+                autoFocus
               />
             </div>
             {errors.email && <span className="aform__err">{errors.email}</span>}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Step 2: Code ── */}
-        {step === 'code' && (
-          <div className="aform__field">
-            <label className="aform__label">Verification Code</label>
-            <div className={`aform__input-wrap${errors.code ? ' aform__input-wrap--err' : ''}`}
-              style={{ justifyContent: 'center' }}>
-              <input
-                type="text"
-                maxLength={6}
-                placeholder="000000"
-                value={code}
-                onChange={e => { setCode(e.target.value); setErrors({}); }}
-                style={{ textAlign: 'center', letterSpacing: 8, fontSize: 22, fontWeight: 800, fontFamily: "'Sora', sans-serif" }}
-                onKeyDown={e => e.key === 'Enter' && handleVerifyCode()}
-              />
-            </div>
-            {errors.code && <span className="aform__err">{errors.code}</span>}
+      {/* ── Step 2: Done — instructions ── */}
+      {step === 'done' && (
+        <div className="aform__fields">
+          <div style={{
+            background: '#f0fdf4',
+            border: '2px solid #bbf7d0',
+            borderRadius: 12,
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            {[
+              '1. Open your email inbox',
+              '2. Find the email from TrackForge',
+              '3. Click the reset link in the email',
+              '4. Set your new password',
+              '5. Come back and log in',
+            ].map((step, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="20,6 9,17 4,12"/>
+                </svg>
+                <span style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: '#1a1d2e', fontFamily: "'Nunito', sans-serif",
+                }}>
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Resend option */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 0',
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: 13,
+            color: '#7c82a0',
+          }}>
+            Didn't receive the email?{' '}
             <button
               className="aform__resend"
-              onClick={() => { setStep('email'); setCode(''); setAlert(null); setErrors({}); }}
+              onClick={() => {
+                setStep('email');
+                setAlert(null);
+                setErrors({});
+              }}
             >
-              ← Use different email
-            </button>
-            <button className="aform__resend" onClick={handleSendCode} style={{ marginTop: 4 }}>
-              Resend code
+              Try again
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Step 3: New password ── */}
-        {step === 'newpwd' && (
-          <>
-            <div className="aform__field">
-              <label className="aform__label">New Password</label>
-              <div className={`aform__input-wrap${errors.newPwd ? ' aform__input-wrap--err' : ''}`}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Min. 8 characters"
-                  value={newPwd}
-                  onChange={e => { setNewPwd(e.target.value); setErrors({}); }}
-                />
-                <button className="aform__eye-btn" onClick={() => setShowPwd(s => !s)}>
-                  {showPwd
-                    ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  }
-                </button>
-              </div>
-              {errors.newPwd && <span className="aform__err">{errors.newPwd}</span>}
-            </div>
-
-            <div className="aform__field">
-              <label className="aform__label">Confirm New Password</label>
-              <div className={`aform__input-wrap${errors.confirmPwd ? ' aform__input-wrap--err' : ''}`}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <input
-                  type="password"
-                  placeholder="Repeat new password"
-                  value={confirmPwd}
-                  onChange={e => { setConfirmPwd(e.target.value); setErrors({}); }}
-                />
-              </div>
-              {errors.confirmPwd && <span className="aform__err">{errors.confirmPwd}</span>}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Buttons */}
+      {/* ── Buttons ── */}
       {step === 'email' && (
-        <button className="aform__submit" onClick={handleSendCode} disabled={loading}>
-          {loading ? <><span className="aform__spinner" /> Sending...</> : 'Send Reset Code'}
-        </button>
-      )}
-
-      {step === 'code' && (
-        <button className="aform__submit" onClick={handleVerifyCode}>
-          Verify Code
-        </button>
-      )}
-
-      {step === 'newpwd' && (
-        <button className="aform__submit" onClick={handleResetPassword}>
-          Reset Password
+        <button
+          className="aform__submit"
+          onClick={handleSendCode}
+          disabled={loading}
+        >
+          {loading
+            ? <><span className="aform__spinner" /> Sending reset link...</>
+            : 'Send Reset Link'
+          }
         </button>
       )}
 
       {step === 'done' && (
-        <button className="aform__submit aform__submit--ok" onClick={() => onSwitch('login')}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
-          Go to Login
+        <button
+          className="aform__submit aform__submit--ok"
+          onClick={() => onSwitch('login')}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="20,6 9,17 4,12"/>
+          </svg>
+          Back to Login
         </button>
       )}
 
+      {/* Back to login link */}
       {step !== 'done' && (
         <p className="aform__sub" style={{ textAlign: 'center' }}>
           Remember your password?{' '}
           <button onClick={() => onSwitch('login')}>Sign in</button>
         </p>
       )}
+
     </div>
   );
 }
