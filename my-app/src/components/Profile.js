@@ -1,18 +1,15 @@
 import emailjs from '@emailjs/browser';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Profile.css';
 
 const INIT = {
   firstName: '', lastName: '', email: '', phone: '',
   role: '', company: '', website: '', bio: '',
-  city: '', country: '', avatar: null, avatarPreview: null,
+  city: '', country: '', dob: '', avatar: null, avatarPreview: null,
 };
 
-export default function Profile({ onProfileSave }) {
-  const [form,        setForm]        = useState(() => {
-    const saved = localStorage.getItem('userProfile');
-    return saved ? JSON.parse(saved) : INIT;
-  });
+export default function Profile({ onProfileSave, projects = [], messages = [] }) {
+  const [form,        setForm]        = useState(INIT);
   const [errors,      setErrors]      = useState({});
   const [saved,       setSaved]       = useState(false);
   const [emailStatus, setEmailStatus] = useState('idle');
@@ -20,6 +17,32 @@ export default function Profile({ onProfileSave }) {
   const [enteredCode, setEnteredCode] = useState('');
   const [codeStep,    setCodeStep]    = useState(false);
   const [codeError,   setCodeError]   = useState('');
+  const [hasProfile,  setHasProfile]  = useState(false);
+  const [editMode,    setEditMode]    = useState(false);
+
+  // ── Load existing profile on mount ──
+  useEffect(() => {
+    const saved = localStorage.getItem('userProfile');
+    if (saved) {
+      const data = JSON.parse(saved);
+      setForm(data);
+      setHasProfile(true);
+      setEmailStatus('verified'); // already verified when saved
+    }
+  }, []);
+
+  // ── Live stats from real dashboard data ──
+  const liveStats = {
+    projects: projects.length,
+    completed: projects.filter(p => p.progress === 100).length,
+    inProgress: projects.filter(p => p.progress > 0 && p.progress < 100).length,
+    clients: messages.length,
+    rating: projects.length > 0
+      ? Math.round(
+          (projects.filter(p => p.progress === 100).length / projects.length) * 100
+        )
+      : 0,
+  };
 
   const set = (f, v) => {
     setForm(p => ({ ...p, [f]: v }));
@@ -40,38 +63,24 @@ export default function Profile({ onProfileSave }) {
       setErrors(e => ({ ...e, email: 'Enter a valid email first' }));
       return;
     }
-
     setEmailStatus('checking');
-
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setVerifyCode(code);
-
     try {
       await emailjs.send(
         process.env.REACT_APP_EMAILJS_SERVICE_ID,
         process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-        {
-          to_email: form.email,
-          to_name:  form.firstName || 'User',
-          code:     code,
-        },
+        { to_email: form.email, to_name: form.firstName || 'User', code },
         process.env.REACT_APP_EMAILJS_PUBLIC_KEY
       );
-
       setEmailStatus('code_sent');
       setCodeStep(true);
-
-    } catch (err) {
-      console.error('EmailJS error:', err);
+    } catch {
       setEmailStatus('idle');
-      setErrors(e => ({
-        ...e,
-        email: 'Failed to send code. Please check your email and try again.',
-      }));
+      setErrors(e => ({ ...e, email: 'Failed to send code. Please try again.' }));
     }
   };
 
-  /* ── Check entered code ── */
   const handleCheckCode = () => {
     if (enteredCode === verifyCode) {
       setEmailStatus('verified');
@@ -102,11 +111,18 @@ export default function Profile({ onProfileSave }) {
     if (!form.email.trim())     e.email     = 'Required';
     else if (emailStatus !== 'verified') e.email = 'Please verify your email first';
     if (!form.role.trim())      e.role      = 'Required';
+    if (!form.dob)              e.dob       = 'Date of birth is required';
     return e;
   };
 
-  /* ── Save ── */
+  /* ── Save — one profile per user ── */
   const handleSave = () => {
+    // Block duplicate profile creation
+    if (hasProfile && !editMode) {
+      setEditMode(true);
+      return;
+    }
+
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
 
@@ -114,42 +130,96 @@ export default function Profile({ onProfileSave }) {
       ...form,
       emailVerified: true,
       savedAt: new Date().toISOString(),
+      liveStats,
     };
 
+    // Save to localStorage (acts as our database)
     localStorage.setItem('userProfile', JSON.stringify(profileData));
 
+    // Notify parent
     if (onProfileSave) onProfileSave(profileData);
 
+    setHasProfile(true);
+    setEditMode(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
+  /* ── Calculate age from DOB ── */
+  const getAge = (dob) => {
+    if (!dob) return '';
+    const today = new Date();
+    const birth = new Date(dob);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
   const initials = `${form.firstName?.[0] || ''}${form.lastName?.[0] || ''}`.toUpperCase() || 'HR';
+  const isReadOnly = hasProfile && !editMode;
 
   return (
     <div className="page-wrap">
       <div className="page-header">
         <div>
           <h1 className="page-title">My Profile</h1>
-          <p className="page-sub">Manage your personal information and account details</p>
+          <p className="page-sub">
+            {hasProfile && !editMode
+              ? 'Your profile is saved. Click Edit to make changes.'
+              : 'Manage your personal information and account details'}
+          </p>
         </div>
-        <button
-          className={`page-save-btn${saved ? ' page-save-btn--ok' : ''}`}
-          onClick={handleSave}
-        >
-          {saved ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
-              Saved!
-            </>
+        <div className="profile-header-btns">
+          {hasProfile && !editMode ? (
+            <button className="page-save-btn" onClick={() => setEditMode(true)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Edit Profile
+            </button>
           ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
-              Save Profile
-            </>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {editMode && (
+                <button className="page-save-btn"
+                  style={{ background: '#f0f2f8', color: '#7c82a0' }}
+                  onClick={() => {
+                    setEditMode(false);
+                    const saved = localStorage.getItem('userProfile');
+                    if (saved) setForm(JSON.parse(saved));
+                  }}>
+                  Cancel
+                </button>
+              )}
+              <button
+                className={`page-save-btn${saved ? ' page-save-btn--ok' : ''}`}
+                onClick={handleSave}
+              >
+                {saved ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+                    Saved!
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+                    {hasProfile ? 'Update Profile' : 'Save Profile'}
+                  </>
+                )}
+              </button>
+            </div>
           )}
-        </button>
+        </div>
       </div>
+
+      {/* One profile warning */}
+      {hasProfile && !editMode && (
+        <div className="profile-notice">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Only one profile allowed per account. Click <strong>Edit Profile</strong> to update your information.
+        </div>
+      )}
 
       <div className="profile-grid">
 
@@ -163,55 +233,70 @@ export default function Profile({ onProfileSave }) {
                 : <span>{initials}</span>
               }
             </div>
-            <label className="profile-avatar-upload" title="Upload photo">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-              <input type="file" accept="image/*" onChange={handleAvatar} hidden />
-            </label>
+            {!isReadOnly && (
+              <label className="profile-avatar-upload" title="Upload photo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <input type="file" accept="image/*" onChange={handleAvatar} hidden />
+              </label>
+            )}
           </div>
 
           <p className="profile-avatar-name">
-            {form.firstName || form.lastName
-              ? `${form.firstName} ${form.lastName}`
-              : 'Your Name'}
+            {form.firstName || form.lastName ? `${form.firstName} ${form.lastName}` : 'Your Name'}
           </p>
           <p className="profile-avatar-role">{form.role || 'Your Role'}</p>
           <p className="profile-avatar-company">{form.company || 'Your Company'}</p>
 
+          {/* Age from DOB */}
+          {form.dob && (
+            <p className="profile-avatar-age">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Age: {getAge(form.dob)} years
+            </p>
+          )}
+
+          {/* Email badge */}
           <div className={`profile-email-badge${emailStatus === 'verified' ? ' profile-email-badge--ok' : ''}`}>
             {emailStatus === 'verified' ? (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="20,6 9,17 4,12"/>
-                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
                 Email Verified
               </>
             ) : (
               <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 Email Not Verified
               </>
             )}
           </div>
 
+          {/* Live stats from dashboard */}
           <div className="profile-mini-stats">
-            <div className="profile-mini-stat">
-              <span className="profile-mini-val">24</span>
+            <div className="profile-mini-stat" title="Total projects">
+              <span className="profile-mini-val">{liveStats.projects}</span>
               <span className="profile-mini-lbl">Projects</span>
             </div>
-            <div className="profile-mini-stat">
-              <span className="profile-mini-val">12</span>
+            <div className="profile-mini-stat" title="Number of clients (messages)">
+              <span className="profile-mini-val">{liveStats.clients}</span>
               <span className="profile-mini-lbl">Clients</span>
             </div>
-            <div className="profile-mini-stat">
-              <span className="profile-mini-val">98%</span>
+            <div className="profile-mini-stat" title="Completion rate">
+              <span className="profile-mini-val">{liveStats.rating}%</span>
               <span className="profile-mini-lbl">Rating</span>
+            </div>
+          </div>
+
+          {/* Extra live stats */}
+          <div className="profile-live-stats">
+            <div className="profile-live-stat">
+              <span className="profile-live-dot" style={{ background: '#4a8af4' }} />
+              <span className="profile-live-label">In Progress</span>
+              <span className="profile-live-val">{liveStats.inProgress}</span>
+            </div>
+            <div className="profile-live-stat">
+              <span className="profile-live-dot" style={{ background: '#22c55e' }} />
+              <span className="profile-live-label">Completed</span>
+              <span className="profile-live-val">{liveStats.completed}</span>
             </div>
           </div>
         </div>
@@ -224,96 +309,87 @@ export default function Profile({ onProfileSave }) {
             <div className={`profile-field${errors.firstName ? ' profile-field--err' : ''}`}>
               <label>First Name <span>*</span></label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <input type="text" placeholder="e.g. Hira" value={form.firstName}
-                  onChange={e => set('firstName', e.target.value)} />
+                  onChange={e => set('firstName', e.target.value)}
+                  disabled={isReadOnly} />
               </div>
               {errors.firstName && <span className="profile-err">{errors.firstName}</span>}
             </div>
-
             <div className={`profile-field${errors.lastName ? ' profile-field--err' : ''}`}>
               <label>Last Name <span>*</span></label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <input type="text" placeholder="e.g. Raza" value={form.lastName}
-                  onChange={e => set('lastName', e.target.value)} />
+                  onChange={e => set('lastName', e.target.value)}
+                  disabled={isReadOnly} />
               </div>
               {errors.lastName && <span className="profile-err">{errors.lastName}</span>}
             </div>
           </div>
 
-          {/* ── Email with verification ── */}
+          {/* Date of Birth */}
+          <div className={`profile-field${errors.dob ? ' profile-field--err' : ''}`}>
+            <label>Date of Birth <span>*</span></label>
+            <div className="profile-input-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <input
+                type="date"
+                value={form.dob}
+                onChange={e => set('dob', e.target.value)}
+                disabled={isReadOnly}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            {errors.dob && <span className="profile-err">{errors.dob}</span>}
+            {form.dob && (
+              <span className="profile-dob-age">Age: {getAge(form.dob)} years old</span>
+            )}
+          </div>
+
+          {/* Email */}
           <div className={`profile-field${errors.email ? ' profile-field--err' : ''}`}>
             <label>Email Address <span>*</span></label>
             <div className="profile-email-row">
               <div className={`profile-input-icon profile-input-icon--email
                 ${emailStatus === 'verified' ? ' profile-input-icon--verified' : ''}
-                ${emailStatus === 'invalid'  ? ' profile-input-icon--invalid'  : ''}
               `}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 <input
                   type="email"
                   placeholder="hira@example.com"
                   value={form.email}
                   onChange={e => set('email', e.target.value)}
-                  disabled={emailStatus === 'verified'}
+                  disabled={emailStatus === 'verified' || isReadOnly}
                 />
                 {emailStatus === 'verified' && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
-                    <polyline points="20,6 9,17 4,12"/>
-                  </svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
                 )}
-                {emailStatus === 'checking' && (
-                  <span className="profile-spinner" />
-                )}
+                {emailStatus === 'checking' && <span className="profile-spinner" />}
               </div>
-
-              {emailStatus !== 'verified' && (
-                <button
-                  className="profile-verify-btn"
-                  onClick={handleVerifyEmail}
-                  disabled={emailStatus === 'checking' || emailStatus === 'code_sent'}
-                >
+              {emailStatus !== 'verified' && !isReadOnly && (
+                <button className="profile-verify-btn" onClick={handleVerifyEmail}
+                  disabled={emailStatus === 'checking' || emailStatus === 'code_sent'}>
                   {emailStatus === 'checking' ? 'Sending...' :
-                   emailStatus === 'code_sent' ? 'Code Sent ✓' : 'Verify Email'}
+                   emailStatus === 'code_sent' ? 'Sent ✓' : 'Verify'}
                 </button>
               )}
             </div>
             {errors.email && <span className="profile-err">{errors.email}</span>}
 
-            {/* Code input step */}
             {codeStep && (
               <div className="profile-code-box">
                 <p className="profile-code-info">
                   Enter the 6-digit code sent to <strong>{form.email}</strong>
                 </p>
                 <div className="profile-code-row">
-                  <input
-                    className="profile-code-input"
-                    type="text"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={enteredCode}
-                    onChange={e => { setEnteredCode(e.target.value); setCodeError(''); }}
-                  />
-                  <button className="profile-code-btn" onClick={handleCheckCode}>
-                    Confirm
-                  </button>
+                  <input className="profile-code-input" type="text" maxLength={6}
+                    placeholder="000000" value={enteredCode}
+                    onChange={e => { setEnteredCode(e.target.value); setCodeError(''); }} />
+                  <button className="profile-code-btn" onClick={handleCheckCode}>Confirm</button>
                 </div>
                 {codeError && <span className="profile-err">{codeError}</span>}
-                <button className="profile-resend-btn" onClick={handleVerifyEmail}>
-                  Resend code
-                </button>
+                <button className="profile-resend-btn" onClick={handleVerifyEmail}>Resend code</button>
               </div>
             )}
           </div>
@@ -322,23 +398,17 @@ export default function Profile({ onProfileSave }) {
             <div className="profile-field">
               <label>Phone Number</label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.42 2 2 0 0 1 3.57 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.29 6.29l1.42-1.42a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.42 2 2 0 0 1 3.57 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.29 6.29l1.42-1.42a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 <input type="tel" placeholder="+1 234 567 890" value={form.phone}
-                  onChange={e => set('phone', e.target.value)} />
+                  onChange={e => set('phone', e.target.value)} disabled={isReadOnly} />
               </div>
             </div>
-
             <div className={`profile-field${errors.role ? ' profile-field--err' : ''}`}>
               <label>Job Role <span>*</span></label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                 <input type="text" placeholder="e.g. UI/UX Designer" value={form.role}
-                  onChange={e => set('role', e.target.value)} />
+                  onChange={e => set('role', e.target.value)} disabled={isReadOnly} />
               </div>
               {errors.role && <span className="profile-err">{errors.role}</span>}
             </div>
@@ -348,24 +418,17 @@ export default function Profile({ onProfileSave }) {
             <div className="profile-field">
               <label>Company</label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                  <polyline points="9,22 9,12 15,12 15,22"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
                 <input type="text" placeholder="e.g. Design Studio" value={form.company}
-                  onChange={e => set('company', e.target.value)} />
+                  onChange={e => set('company', e.target.value)} disabled={isReadOnly} />
               </div>
             </div>
-
             <div className="profile-field">
               <label>City</label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <input type="text" placeholder="e.g. Lahore" value={form.city}
-                  onChange={e => set('city', e.target.value)} />
+                  onChange={e => set('city', e.target.value)} disabled={isReadOnly} />
               </div>
             </div>
           </div>
@@ -374,45 +437,35 @@ export default function Profile({ onProfileSave }) {
             <div className="profile-field">
               <label>Country</label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="2" y1="12" x2="22" y2="12"/>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                 <input type="text" placeholder="e.g. Pakistan" value={form.country}
-                  onChange={e => set('country', e.target.value)} />
+                  onChange={e => set('country', e.target.value)} disabled={isReadOnly} />
               </div>
             </div>
-
             <div className="profile-field">
               <label>Website / Portfolio</label>
               <div className="profile-input-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <input type="url" placeholder="https://yourportfolio.com" value={form.website}
-                  onChange={e => set('website', e.target.value)} />
+                  onChange={e => set('website', e.target.value)} disabled={isReadOnly} />
               </div>
             </div>
           </div>
 
           <div className="profile-field">
             <label>Bio</label>
-            <textarea
-              rows={3}
+            <textarea rows={3}
               placeholder="Tell clients about yourself and your expertise..."
               value={form.bio}
               onChange={e => set('bio', e.target.value)}
+              disabled={isReadOnly}
             />
           </div>
 
           {saved && (
             <div className="profile-success">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="20,6 9,17 4,12"/>
-              </svg>
-              Profile saved successfully!
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+              Profile {hasProfile ? 'updated' : 'saved'} successfully!
             </div>
           )}
         </div>

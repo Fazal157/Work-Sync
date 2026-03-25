@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import emailjs from '@emailjs/browser';
+import React, { useState }                        from 'react';
+import emailjs                                     from '@emailjs/browser';
+import { auth, db,
+         createUserWithEmailAndPassword,
+         doc, setDoc }                             from '../firebase';
 
 const getStrength = (pwd) => {
   let score = 0;
-  if (pwd.length >= 8)         score++;
-  if (/[A-Z]/.test(pwd))       score++;
-  if (/[0-9]/.test(pwd))       score++;
-  if (/[^A-Za-z0-9]/.test(pwd))score++;
+  if (pwd.length >= 8)          score++;
+  if (/[A-Z]/.test(pwd))        score++;
+  if (/[0-9]/.test(pwd))        score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
   return score;
 };
 
@@ -14,18 +17,18 @@ const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', 'weak', 'fair', 'good', 'strong'];
 
 export default function SignupForm({ onSwitch }) {
-  const [form,         setForm]         = useState({ firstName: '', lastName: '', email: '', password: '', confirmPwd: '' });
-  const [errors,       setErrors]       = useState({});
-  const [showPwd,      setShowPwd]      = useState(false);
-  const [showCPwd,     setShowCPwd]     = useState(false);
-  const [loading,      setLoading]      = useState(false);
-  const [terms,        setTerms]        = useState(false);
-  const [alert,        setAlert]        = useState(null);
-  const [emailStatus,  setEmailStatus]  = useState('idle'); // idle|checking|code_sent|verified
-  const [verifyCode,   setVerifyCode]   = useState('');
-  const [enteredCode,  setEnteredCode]  = useState('');
-  const [codeStep,     setCodeStep]     = useState(false);
-  const [codeError,    setCodeError]    = useState('');
+  const [form,        setForm]        = useState({ firstName: '', lastName: '', email: '', password: '', confirmPwd: '' });
+  const [errors,      setErrors]      = useState({});
+  const [showPwd,     setShowPwd]     = useState(false);
+  const [showCPwd,    setShowCPwd]    = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [terms,       setTerms]       = useState(false);
+  const [alert,       setAlert]       = useState(null);
+  const [emailStatus, setEmailStatus] = useState('idle');
+  const [verifyCode,  setVerifyCode]  = useState('');
+  const [enteredCode, setEnteredCode] = useState('');
+  const [codeStep,    setCodeStep]    = useState(false);
+  const [codeError,   setCodeError]   = useState('');
 
   const set = (f, v) => {
     setForm(p => ({ ...p, [f]: v }));
@@ -41,33 +44,20 @@ export default function SignupForm({ onSwitch }) {
 
   const strength = getStrength(form.password);
 
-  /* ── Send verification code ── */
+  /* ── Send verification code via EmailJS ── */
   const handleVerifyEmail = async () => {
     if (!/\S+@\S+\.\S+/.test(form.email)) {
       setErrors(e => ({ ...e, email: 'Enter a valid email first' }));
       return;
     }
-
-    // Check if already registered
-    const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    if (users.find(u => u.email === form.email)) {
-      setErrors(e => ({ ...e, email: 'This email is already registered. Please log in.' }));
-      return;
-    }
-
     setEmailStatus('checking');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setVerifyCode(code);
-
     try {
       await emailjs.send(
         process.env.REACT_APP_EMAILJS_SERVICE_ID,
         process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-        {
-          to_email: form.email,
-          to_name:  form.firstName || 'User',
-          code:     code,
-        },
+        { to_email: form.email, to_name: form.firstName || 'User', code },
         process.env.REACT_APP_EMAILJS_PUBLIC_KEY
       );
       setEmailStatus('code_sent');
@@ -79,6 +69,7 @@ export default function SignupForm({ onSwitch }) {
     }
   };
 
+  /* ── Check entered code ── */
   const handleCheckCode = () => {
     if (enteredCode === verifyCode) {
       setEmailStatus('verified');
@@ -90,77 +81,62 @@ export default function SignupForm({ onSwitch }) {
     }
   };
 
-  /* ── Validate ── */
+  /* ── Validate form ── */
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim()) e.firstName   = 'Required';
-    if (!form.lastName.trim())  e.lastName    = 'Required';
-    if (!form.email.trim())     e.email       = 'Required';
+    if (!form.firstName.trim()) e.firstName  = 'Required';
+    if (!form.lastName.trim())  e.lastName   = 'Required';
+    if (!form.email.trim())     e.email      = 'Required';
     else if (emailStatus !== 'verified') e.email = 'Please verify your email first';
-    if (!form.password)         e.password    = 'Required';
+    if (!form.password)         e.password   = 'Required';
     else if (form.password.length < 8) e.password = 'Minimum 8 characters';
     if (form.password !== form.confirmPwd) e.confirmPwd = 'Passwords do not match';
-    if (!terms) e.terms = 'You must accept the terms';
+    if (!terms)                 e.terms      = 'You must accept the terms';
     return e;
   };
 
-  /* ── Send account verification link ── */
-  const sendVerificationLink = async (user) => {
-    const verifyToken = btoa(JSON.stringify({ email: user.email, ts: Date.now() }));
-    const verifyLink  = `${window.location.origin}?verify=${verifyToken}`;
-
-    try {
-      await emailjs.send(
-        process.env.REACT_APP_EMAILJS_SERVICE_ID,
-        process.env.REACT_APP_EMAILJS_VERIFY_TEMPLATE_ID || process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-        {
-          to_email:    user.email,
-          to_name:     user.firstName,
-          verify_link: verifyLink,
-          code:        'Click the link below to verify your account',
-        },
-        process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-      );
-    } catch (err) {
-      console.error('Verification link email failed:', err);
-    }
-  };
-
-  /* ── Submit ── */
+  /* ── Signup with Firebase ── */
   const handleSignup = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
 
     try {
-      const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      const newUser = {
-        id:        Date.now(),
+      // Create user in Firebase Auth — works on ALL devices
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        form.email.trim(),
+        form.password
+      );
+
+      // Save user profile to Firestore database
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        uid:       cred.user.uid,
         firstName: form.firstName.trim(),
         lastName:  form.lastName.trim(),
         email:     form.email.trim(),
-        password:  form.password,
-        verified:  true, // verified via email code already
+        verified:  true,
+        provider:  'email',
         createdAt: new Date().toISOString(),
-      };
-
-      users.push(newUser);
-      localStorage.setItem('registeredUsers', JSON.stringify(users));
-
-      // Send welcome / verification link email
-      await sendVerificationLink(newUser);
+      });
 
       setAlert({
         type: 'success',
-        msg:  'Account created! A confirmation email has been sent. You can now log in.',
+        msg:  'Account created successfully! You can now log in from any device.',
       });
+      setTimeout(() => onSwitch('login'), 2000);
 
-      setTimeout(() => onSwitch('login'), 2500);
-
-    } catch {
-      setAlert({ type: 'error', msg: 'Something went wrong. Please try again.' });
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        setErrors({ email: 'This email is already registered. Please log in.' });
+      } else if (err.code === 'auth/weak-password') {
+        setErrors({ password: 'Password too weak. Use at least 8 characters.' });
+      } else if (err.code === 'auth/invalid-email') {
+        setErrors({ email: 'Invalid email address.' });
+      } else {
+        setAlert({ type: 'error', msg: `Signup failed: ${err.message}` });
+      }
     }
-
     setLoading(false);
   };
 
@@ -174,6 +150,7 @@ export default function SignupForm({ onSwitch }) {
         </p>
       </div>
 
+      {/* Alert */}
       {alert && (
         <div className={`aform__alert aform__alert--${alert.type}`}>
           {alert.type === 'success' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>}
@@ -184,6 +161,7 @@ export default function SignupForm({ onSwitch }) {
       )}
 
       <div className="aform__fields">
+
         {/* Name row */}
         <div className="aform__row">
           <div className="aform__field">
@@ -211,7 +189,7 @@ export default function SignupForm({ onSwitch }) {
           <label className="aform__label">Email Address</label>
           <div className="aform__verify-row">
             <div className={`aform__input-wrap
-              ${errors.email ? ' aform__input-wrap--err' : ''}
+              ${errors.email    ? ' aform__input-wrap--err' : ''}
               ${emailStatus === 'verified' ? ' aform__input-wrap--ok' : ''}
             `}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -225,7 +203,9 @@ export default function SignupForm({ onSwitch }) {
               {emailStatus === 'verified' && (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
               )}
-              {emailStatus === 'checking' && <span className="aform__spinner" style={{ borderTopColor: '#4a8af4', borderColor: '#e4e7f0' }} />}
+              {emailStatus === 'checking' && (
+                <span className="aform__spinner" style={{ borderTopColor: '#4a8af4', borderColor: '#e4e7f0' }} />
+              )}
             </div>
             {emailStatus !== 'verified' && (
               <button
@@ -233,13 +213,14 @@ export default function SignupForm({ onSwitch }) {
                 onClick={handleVerifyEmail}
                 disabled={emailStatus === 'checking' || emailStatus === 'code_sent'}
               >
-                {emailStatus === 'checking' ? <><span className="aform__spinner" />Sending</> :
-                 emailStatus === 'code_sent' ? 'Sent ✓' : 'Verify'}
+                {emailStatus === 'checking' ? 'Sending...' :
+                 emailStatus === 'code_sent' ? 'Sent ✓'    : 'Verify'}
               </button>
             )}
           </div>
           {errors.email && <span className="aform__err">{errors.email}</span>}
 
+          {/* Code input */}
           {codeStep && (
             <div className="aform__code-box">
               <p className="aform__code-info">
@@ -254,10 +235,14 @@ export default function SignupForm({ onSwitch }) {
                   value={enteredCode}
                   onChange={e => { setEnteredCode(e.target.value); setCodeError(''); }}
                 />
-                <button className="aform__code-confirm" onClick={handleCheckCode}>Confirm</button>
+                <button className="aform__code-confirm" onClick={handleCheckCode}>
+                  Confirm
+                </button>
               </div>
               {codeError && <span className="aform__err">{codeError}</span>}
-              <button className="aform__resend" onClick={handleVerifyEmail}>Resend code</button>
+              <button className="aform__resend" onClick={handleVerifyEmail}>
+                Resend code
+              </button>
             </div>
           )}
         </div>
@@ -285,7 +270,11 @@ export default function SignupForm({ onSwitch }) {
             <div className="aform__strength">
               <div className="aform__strength-bars">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className={`aform__strength-bar${i <= strength ? ` aform__strength-bar--${STRENGTH_COLORS[strength]}` : ''}`} />
+                  <div key={i}
+                    className={`aform__strength-bar${i <= strength
+                      ? ` aform__strength-bar--${STRENGTH_COLORS[strength]}`
+                      : ''}`}
+                  />
                 ))}
               </div>
               <span className="aform__strength-label">
@@ -318,12 +307,20 @@ export default function SignupForm({ onSwitch }) {
 
         {/* Terms */}
         <label className="aform__terms">
-          <input type="checkbox" checked={terms} onChange={e => { setTerms(e.target.checked); if (errors.terms) setErrors(er => ({ ...er, terms: '' })); }} />
-          I agree to the <a href="#terms">Terms of Service</a> and <a href="#privacy">Privacy Policy</a>
+          <input type="checkbox" checked={terms}
+            onChange={e => {
+              setTerms(e.target.checked);
+              if (errors.terms) setErrors(er => ({ ...er, terms: '' }));
+            }}
+          />
+          I agree to the <a href="#terms">Terms of Service</a> and{' '}
+          <a href="#privacy">Privacy Policy</a>
         </label>
         {errors.terms && <span className="aform__err">{errors.terms}</span>}
+
       </div>
 
+      {/* Submit */}
       <button
         className={`aform__submit${alert?.type === 'success' ? ' aform__submit--ok' : ''}`}
         onClick={handleSignup}
@@ -332,7 +329,12 @@ export default function SignupForm({ onSwitch }) {
         {loading
           ? <><span className="aform__spinner" /> Creating account...</>
           : alert?.type === 'success'
-            ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg> Account Created!</>
+            ? <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="20,6 9,17 4,12"/>
+                </svg>
+                Account Created!
+              </>
             : 'Create Account'
         }
       </button>

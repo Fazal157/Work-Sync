@@ -28,12 +28,23 @@ export default function Setting({ userProfile }) {
     setTimeout(() => setSaved(false), 2500);
   };
 
+  // ── Calculate age from DOB ──
+  const getAge = (dob) => {
+    if (!dob) return null;
+    const today = new Date();
+    const birth = new Date(dob);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
   const TABS = [
-    { key: 'profile',    label: 'My Profile',     icon: '👤' },
-    { key: 'general',    label: 'General',         icon: '⚙' },
-    { key: 'notifs',     label: 'Notifications',   icon: '🔔' },
-    { key: 'appearance', label: 'Appearance',      icon: '🎨' },
-    { key: 'privacy',    label: 'Privacy',         icon: '🔒' },
+    { key: 'profile',    label: 'My Profile',   icon: '👤' },
+    { key: 'general',    label: 'General',       icon: '⚙'  },
+    { key: 'notifs',     label: 'Notifications', icon: '🔔' },
+    { key: 'appearance', label: 'Appearance',    icon: '🎨' },
+    { key: 'privacy',    label: 'Privacy',       icon: '🔒' },
   ];
 
   const Toggle = ({ checked, onChange }) => (
@@ -65,12 +76,18 @@ export default function Setting({ userProfile }) {
           >
             {saved ? (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="20,6 9,17 4,12"/>
+                </svg>
                 Saved!
               </>
             ) : (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17,21 17,13 7,13 7,21"/>
+                  <polyline points="7,3 7,8 15,8"/>
+                </svg>
                 Save Settings
               </>
             )}
@@ -79,7 +96,8 @@ export default function Setting({ userProfile }) {
       </div>
 
       <div className="settpage__layout">
-        {/* Tabs */}
+
+        {/* ── Tabs ── */}
         <div className="settpage__tabs">
           {TABS.map(t => (
             <button
@@ -93,26 +111,34 @@ export default function Setting({ userProfile }) {
           ))}
         </div>
 
-        {/* Content */}
+        {/* ── Content ── */}
         <div className="settpage__content">
 
-          {/* ── My Profile tab ── */}
+          {/* ════════════════════════
+              MY PROFILE TAB
+          ════════════════════════ */}
           {active === 'profile' && (
             <div className="sett-card">
               <h3 className="sett-card-title">My Profile</h3>
 
               {!userProfile ? (
                 <div className="sett-no-profile">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#b2b7ce" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                    stroke="#b2b7ce" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
                   <p>No profile created yet.</p>
                   <span>Go to the <strong>Profile</strong> section from the sidebar to create your profile.</span>
                 </div>
               ) : (
                 <>
-                  {/* Profile header */}
+                  {/* Avatar + name header */}
                   <div className="sett-profile-header">
                     <div className="sett-profile-avatar"
-                      style={{ background: userProfile.avatarPreview ? 'transparent' : 'linear-gradient(135deg,#f97316,#ec4899)' }}>
+                      style={{ background: userProfile.avatarPreview
+                        ? 'transparent'
+                        : 'linear-gradient(135deg,#f97316,#ec4899)' }}>
                       {userProfile.avatarPreview
                         ? <img src={userProfile.avatarPreview} alt="avatar" />
                         : <span>{initials}</span>
@@ -126,43 +152,100 @@ export default function Setting({ userProfile }) {
                       <p className="sett-profile-company">{userProfile.company}</p>
                       {userProfile.emailVerified && (
                         <span className="sett-verified-badge">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <polyline points="20,6 9,17 4,12"/>
+                          </svg>
                           Email Verified
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Profile details grid */}
+                  {/* ── Details grid ── */}
                   <div className="sett-profile-grid">
 
+                    {/* Email */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                          <polyline points="22,6 12,13 2,6"/>
+                        </svg>
                         Email
                       </span>
                       <span className="sett-profile-val">{userProfile.email || '—'}</span>
                     </div>
 
+                    {/* Phone */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.42 2 2 0 0 1 3.57 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.29 6.29l1.42-1.42a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.42 2 2 0 0 1 3.57 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.29 6.29l1.42-1.42a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
                         Phone
                       </span>
                       <span className="sett-profile-val">{userProfile.phone || '—'}</span>
                     </div>
 
+                    {/* ── Date of Birth ── */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2"/>
+                          <line x1="16" y1="2"  x2="16" y2="6"/>
+                          <line x1="8"  y1="2"  x2="8"  y2="6"/>
+                          <line x1="3"  y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Date of Birth
+                      </span>
+                      <span className="sett-profile-val">
+                        {userProfile.dob
+                          ? new Date(userProfile.dob).toLocaleDateString('en-US', {
+                              day:   'numeric',
+                              month: 'long',
+                              year:  'numeric',
+                            })
+                          : '—'
+                        }
+                      </span>
+                    </div>
+
+                    {/* ── Age ── */}
+                    <div className="sett-profile-field">
+                      <span className="sett-profile-lbl">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12,6 12,12 16,14"/>
+                        </svg>
+                        Age
+                      </span>
+                      <span className="sett-profile-val">
+                        {getAge(userProfile.dob) !== null
+                          ? `${getAge(userProfile.dob)} years old`
+                          : '—'}
+                      </span>
+                    </div>
+
+                    {/* Company */}
+                    <div className="sett-profile-field">
+                      <span className="sett-profile-lbl">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
                         Company
                       </span>
                       <span className="sett-profile-val">{userProfile.company || '—'}</span>
                     </div>
 
+                    {/* Location */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
                         Location
                       </span>
                       <span className="sett-profile-val">
@@ -170,26 +253,40 @@ export default function Setting({ userProfile }) {
                       </span>
                     </div>
 
+                    {/* Website */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                        </svg>
                         Website
                       </span>
                       <span className="sett-profile-val">
                         {userProfile.website
-                          ? <a href={userProfile.website} target="_blank" rel="noreferrer">{userProfile.website}</a>
+                          ? <a href={userProfile.website} target="_blank" rel="noreferrer">
+                              {userProfile.website}
+                            </a>
                           : '—'}
                       </span>
                     </div>
 
+                    {/* Member Since */}
                     <div className="sett-profile-field">
                       <span className="sett-profile-lbl">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12,6 12,12 16,14"/>
+                        </svg>
                         Member Since
                       </span>
                       <span className="sett-profile-val">
                         {userProfile.savedAt
-                          ? new Date(userProfile.savedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                          ? new Date(userProfile.savedAt).toLocaleDateString('en-US', {
+                              month: 'long',
+                              day:   'numeric',
+                              year:  'numeric',
+                            })
                           : '—'}
                       </span>
                     </div>
@@ -208,7 +305,9 @@ export default function Setting({ userProfile }) {
             </div>
           )}
 
-          {/* General */}
+          {/* ════════════════════════
+              GENERAL TAB
+          ════════════════════════ */}
           {active === 'general' && (
             <div className="sett-card">
               <h3 className="sett-card-title">General Settings</h3>
@@ -253,16 +352,18 @@ export default function Setting({ userProfile }) {
             </div>
           )}
 
-          {/* Notifications */}
+          {/* ════════════════════════
+              NOTIFICATIONS TAB
+          ════════════════════════ */}
           {active === 'notifs' && (
             <div className="sett-card">
               <h3 className="sett-card-title">Notification Preferences</h3>
               {[
-                { key: 'emailNotifs',     label: 'Email Notifications',  desc: 'Receive notifications via email' },
-                { key: 'projectUpdates',  label: 'Project Updates',       desc: 'Get notified when projects change' },
-                { key: 'messageAlerts',   label: 'Message Alerts',        desc: 'Alerts for new client messages' },
-                { key: 'weeklyReport',    label: 'Weekly Report',         desc: 'Summary email every Monday' },
-                { key: 'marketingEmails', label: 'Marketing Emails',      desc: 'Product updates and offers' },
+                { key: 'emailNotifs',     label: 'Email Notifications', desc: 'Receive notifications via email'       },
+                { key: 'projectUpdates',  label: 'Project Updates',      desc: 'Get notified when projects change'    },
+                { key: 'messageAlerts',   label: 'Message Alerts',       desc: 'Alerts for new client messages'       },
+                { key: 'weeklyReport',    label: 'Weekly Report',        desc: 'Summary email every Monday'           },
+                { key: 'marketingEmails', label: 'Marketing Emails',     desc: 'Product updates and offers'           },
               ].map(item => (
                 <div key={item.key} className="sett-toggle-row">
                   <div>
@@ -278,7 +379,9 @@ export default function Setting({ userProfile }) {
             </div>
           )}
 
-          {/* Appearance */}
+          {/* ════════════════════════
+              APPEARANCE TAB
+          ════════════════════════ */}
           {active === 'appearance' && (
             <div className="sett-card">
               <h3 className="sett-card-title">Appearance</h3>
@@ -329,15 +432,17 @@ export default function Setting({ userProfile }) {
             </div>
           )}
 
-          {/* Privacy */}
+          {/* ════════════════════════
+              PRIVACY TAB
+          ════════════════════════ */}
           {active === 'privacy' && (
             <div className="sett-card">
               <h3 className="sett-card-title">Privacy & Security</h3>
               {[
                 { key: 'profileVisible', label: 'Public Profile',  desc: 'Make your profile visible to others' },
-                { key: 'showEmail',      label: 'Show Email',       desc: 'Display email on public profile' },
-                { key: 'allowMessages', label: 'Allow Messages',   desc: 'Let anyone send you messages' },
-                { key: 'twoFactor',     label: 'Two-Factor Auth',  desc: 'Extra security for your account' },
+                { key: 'showEmail',      label: 'Show Email',       desc: 'Display email on public profile'     },
+                { key: 'allowMessages',  label: 'Allow Messages',   desc: 'Let anyone send you messages'        },
+                { key: 'twoFactor',      label: 'Two-Factor Auth',  desc: 'Extra security for your account'     },
               ].map(item => (
                 <div key={item.key} className="sett-toggle-row">
                   <div>
@@ -350,23 +455,36 @@ export default function Setting({ userProfile }) {
                   />
                 </div>
               ))}
+
               <div className="sett-danger-zone">
                 <h4>Danger Zone</h4>
-                <button className="sett-danger-btn"
-                  onClick={() => { localStorage.removeItem('userProfile'); window.location.reload(); }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                <button
+                  className="sett-danger-btn"
+                  onClick={() => {
+                    localStorage.removeItem('userProfile');
+                    window.location.reload();
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  </svg>
                   Delete Account
                 </button>
               </div>
             </div>
           )}
 
+          {/* Save success toast */}
           {saved && active !== 'profile' && (
             <div className="sett-saved">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
               Settings saved successfully!
             </div>
           )}
+
         </div>
       </div>
     </div>
