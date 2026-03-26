@@ -1,4 +1,4 @@
-/* ══ Page wrapper ══ */
+my /* ══ Page wrapper ══ */
 .msgpage {
   flex: 1;
   display: flex;
@@ -220,7 +220,7 @@
 .msgpage__compose-btn:hover { background: #4a8af4; transform: translateY(-1px); }
 
 /* ══ Thread ══ */
-.msgpage__thread          { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.msgpage__thread          { display: flex; flex-direction: column; height: 100%; overflow: hidden; min-height: 0; }
 
 .msgpage__thread-head {
   display: flex;
@@ -267,6 +267,7 @@
 .msgpage__thread-body {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -352,6 +353,9 @@
   border-top: 1px solid #f0f2f8;
   background: #fff;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 .msgpage__reply-box input {
   flex: 1;
